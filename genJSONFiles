@@ -1,0 +1,78 @@
+#!/usr/bin/env ruby
+
+# TODO:
+# * Items
+# * Move textures to correct directory
+
+# Generates blockstate and model JSON files for minecraft 1.8 based on the
+# textures.
+# This script will create the necessary files and directories in the current
+# working directory.
+
+# Parse arguments
+if ARGV.size != 2
+  STDERR.puts "Usage: #{$PROGRAM_NAME} <mod id> <mod resource directory>"
+  exit 1
+end
+
+MOD_ID = ARGV.shift
+RESOURCE_DIR = ARGV.shift
+
+# Some static variable declarations
+REL_ASSETS_DIR = "assets"
+REL_MODELS_DIR = "#{REL_ASSETS_DIR}/#{MOD_ID}/models"
+REL_BLOCKSTATES_DIR = "#{REL_ASSETS_DIR}/#{MOD_ID}/blockstates"
+REL_TEXTURES_DIR = "#{REL_ASSETS_DIR}/#{MOD_ID}/textures"
+
+# Imports
+require './block'
+require './block_state'
+require './model'
+require 'json'
+require 'fileutils'
+
+# Function definitions
+$blocks = {}
+def process_block(block_name, states, texture)
+  block = $blocks[block_name] = Block.new(block_name) unless block = $blocks[block_name]
+  block.add_texture(states, texture)
+end
+
+def write_as_json(dir, filename, object)
+  File.open("#{dir}/#{filename}", 'w') {|f| f.write(JSON.pretty_generate(object.to_json_h))}
+end
+
+### Main Program
+Dir.glob("#{RESOURCE_DIR}/assets/#{MOD_ID}/textures/blocks/*.png") do |texture|
+  basename = File.basename(texture)
+  texture_name, ext = basename.split('.')
+  block_name, *states = texture_name.split('_')
+
+  process_block(block_name, states, texture_name)
+end
+
+if $blocks.empty?
+  STDERR.puts "Error: No texture files were found, did you provide a valid resource directory?"
+  exit 2
+end
+
+# Create necessary output directories
+puts "Creating output directories..."
+FileUtils.mkdir_p REL_MODELS_DIR
+FileUtils.mkdir_p REL_BLOCKSTATES_DIR
+FileUtils.mkdir_p REL_TEXTURES_DIR
+
+$blocks.each do |block_name, block|
+  puts "Processing block #{block_name}"
+  block_state = BlockState.from_block(block)
+  if block_state && block_state.models
+    puts " > Generating models..."
+    block_state.models.each do |variant, model|
+      write_as_json(REL_MODELS_DIR, model.file_name, model)
+      puts " >> Created #{REL_MODELS_DIR}/#{model.file_name}"
+    end
+
+    write_as_json(REL_BLOCKSTATES_DIR, block_state.file_name, block_state)
+    puts " > Created blockstate #{REL_BLOCKSTATES_DIR}/#{block_state.file_name}"
+  end
+end
