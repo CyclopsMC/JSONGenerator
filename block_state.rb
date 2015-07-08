@@ -29,9 +29,12 @@ class BlockState
 
   def to_json_h
     if @variants.first == "normal"
-      { variants: { normal: { model: resource_name } } }
+      { variants: {
+        normal: { model: resource_name },
+        inventory: { model: resource_name }
+      } }
     else
-      { variants: variants_to_json_h }
+      { variants: variants_to_json_h.merge({ inventory: { model: resource_name } }) }
     end
   end
 
