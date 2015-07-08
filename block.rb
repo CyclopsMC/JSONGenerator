@@ -6,7 +6,7 @@ class Texture
   end
 
   def to_s
-    "#{MOD_ID}:#{@texture_name}"
+    "#{MOD_ID}:blocks/#{@texture_name}"
   end
 end
 

@@ -29,7 +29,7 @@ class BlockState
 
   def to_json_h
     if @variants.first == "normal"
-      { variants: { normal: resource_name } }
+      { variants: { normal: { model: resource_name } } }
     else
       { variants: variants_to_json_h }
     end
@@ -99,7 +99,7 @@ class BlockState
   def variants_to_json_h
     variants_h = {}
     @models.each do |k,v|
-      variants_h[join_hash(k,'=',',')] = v.resource_name
+      variants_h[join_hash(k,'=',',')] = { model: v.resource_name }
     end
     variants_h
   end
