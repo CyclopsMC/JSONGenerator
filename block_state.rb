@@ -58,8 +58,13 @@ class BlockState
       # Check if a state != :normal should be the default state
       if normal_dirs.empty? || !(other_dirs - normal_dirs).empty?
         # Ask the user for the default state
-        default_state_name = other_states.keys.first
-        # TODO
+        selected_state = nil
+
+        while !selected_state || !other_states.keys.include?(selected_state)
+          print "Block '#{block.block_name}' has multiple states, which one is the default? (#{other_states.keys.join('/')}) "
+          selected_state = gets.chomp
+        end
+        default_state_name = selected_state
 
         # Merge the :normal and default state
         default_state = default_state.merge(block.states[default_state_name])
