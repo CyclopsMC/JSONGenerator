@@ -1,4 +1,4 @@
-class Model
+class BlockModel
   def initialize(*args)
     @block_name = args.shift
     @texture_bindings = args.shift
@@ -32,7 +32,7 @@ class Model
     models = {}
 
     # Generate a default model
-    default_model = Model.new(block_state.block_name, block_state.default_state)
+    default_model = BlockModel.new(block_state.block_name, block_state.default_state)
 
     # For each variant we generate a model with texture bindings that extend the default model
     block_state.variants.each do |variant|
@@ -49,7 +49,7 @@ class Model
         texture_bindings = {}
         active_state_bindings.each{|_,b| texture_bindings.merge!(b)}
 
-        models[variant] = Model.new(block_state.block_name, texture_bindings, active_states, default_model)
+        models[variant] = BlockModel.new(block_state.block_name, texture_bindings, active_states, default_model)
       end
     end
 

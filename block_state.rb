@@ -1,4 +1,4 @@
-require './model'
+require './block_model'
 
 class BlockState
   attr_reader :block_name, :default_state, :states, :variants, :models
@@ -84,7 +84,7 @@ class BlockState
   end
 
   def gen_models
-    @models = Model.models_from_block_state(self)
+    @models = BlockModel.models_from_block_state(self)
   end
 
   # { a: true, b: false } => a=true,b=true

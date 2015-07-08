@@ -1,9 +1,5 @@
 #!/usr/bin/env ruby
 
-# TODO:
-# * Items
-# * Move textures to correct directory
-
 # Generates blockstate and model JSON files for minecraft 1.8 based on the
 # textures.
 # This script will create the necessary files and directories in the current
@@ -24,10 +20,14 @@ REL_MODELS_DIR = "#{REL_ASSETS_DIR}/#{MOD_ID}/models"
 REL_BLOCKSTATES_DIR = "#{REL_ASSETS_DIR}/#{MOD_ID}/blockstates"
 REL_TEXTURES_DIR = "#{REL_ASSETS_DIR}/#{MOD_ID}/textures"
 
+REL_BLOCK_MODELS_DIR = "#{REL_MODELS_DIR}/block"
+REL_ITEM_MODELS_DIR = "#{REL_MODELS_DIR}/item"
+
 # Imports
 require './block'
 require './block_state'
-require './model'
+require './block_model'
+require './item'
 require 'json'
 require 'fileutils'
 
@@ -38,41 +38,76 @@ def process_block(block_name, states, texture)
   block.add_texture(states, texture)
 end
 
+$items = {}
+def process_item(item_name)
+  $items[item_name] = Item.new(item_name)
+end
+
 def write_as_json(dir, filename, object)
   File.open("#{dir}/#{filename}", 'w') {|f| f.write(JSON.pretty_generate(object.to_json_h))}
 end
 
+def get_blocks
+  Dir.glob("#{RESOURCE_DIR}/#{REL_TEXTURES_DIR}/blocks/*.png") do |texture|
+    basename = File.basename(texture)
+    texture_name, ext = basename.split('.')
+    block_name, *states = texture_name.split('_')
+
+    process_block(block_name, states, texture_name)
+  end
+
+  if $blocks.empty?
+    STDERR.puts "Error: No block texture files were found, did you provide a valid resource directory?"
+    exit 2
+  end
+end
+
+def get_items
+  Dir.glob("#{RESOURCE_DIR}/#{REL_TEXTURES_DIR}/items/*.png") do |texture|
+    basename = File.basename(texture)
+    item_name, ext = basename.split('.')
+
+    process_item(item_name)
+  end
+
+  if $items.empty?
+    STDERR.puts "Error: No item texture files were found, did you provide a valid resource directory?"
+    exit 2
+  end
+end
+
 ### Main Program
-Dir.glob("#{RESOURCE_DIR}/assets/#{MOD_ID}/textures/blocks/*.png") do |texture|
-  basename = File.basename(texture)
-  texture_name, ext = basename.split('.')
-  block_name, *states = texture_name.split('_')
-
-  process_block(block_name, states, texture_name)
-end
-
-if $blocks.empty?
-  STDERR.puts "Error: No texture files were found, did you provide a valid resource directory?"
-  exit 2
-end
+# Fetch a list of blocks and items from the texture files
+get_blocks
+get_items
 
 # Create necessary output directories
 puts "Creating output directories..."
-FileUtils.mkdir_p REL_MODELS_DIR
 FileUtils.mkdir_p REL_BLOCKSTATES_DIR
-FileUtils.mkdir_p REL_TEXTURES_DIR
+FileUtils.mkdir_p REL_BLOCK_MODELS_DIR
+FileUtils.mkdir_p REL_ITEM_MODELS_DIR
 
+# Create blockstates and block models
+puts "== BLOCKS"
 $blocks.each do |block_name, block|
   puts "Processing block #{block_name}"
   block_state = BlockState.from_block(block)
   if block_state && block_state.models
     puts " > Generating models..."
     block_state.models.each do |variant, model|
-      write_as_json(REL_MODELS_DIR, model.file_name, model)
-      puts " >> Created #{REL_MODELS_DIR}/#{model.file_name}"
+      write_as_json(REL_BLOCK_MODELS_DIR, model.file_name, model)
+      puts " >> Created #{REL_BLOCK_MODELS_DIR}/#{model.file_name}"
     end
 
     write_as_json(REL_BLOCKSTATES_DIR, block_state.file_name, block_state)
     puts " > Created blockstate #{REL_BLOCKSTATES_DIR}/#{block_state.file_name}"
   end
+end
+
+# Create item models
+puts "\n== ITEMS"
+$items.each do |item_name, item|
+  puts "Processing item #{item_name}"
+  write_as_json(REL_ITEM_MODELS_DIR, item.file_name, item)
+  puts " > Created #{REL_ITEM_MODELS_DIR}/#{item.file_name}"
 end
